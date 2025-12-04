@@ -1,63 +1,59 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { getToken } from "@/lib/auth";
+import { jwtDecode } from "jwt-decode";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
+interface JwtPayload {
+  sub: number;
+  username: string;
+  role: string;
+  exp: number;
+  iat: number;
+}
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    console.log('Dashboard token:', savedToken);
+export default function DashboardHome() {
+  const token = getToken();
+  let username = "Guest";
 
-    if (!savedToken) {
-      console.warn('No token found! Redirecting to login...');
-      router.push('/');
-    } else {
-      setToken(savedToken);
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      if (decoded.username) {
+        username = decoded.username;
+      }
+    } catch (e) {
+      console.error("Token decoding failed:", e);
     }
-  }, [router]);
-
-  function logout() {
-    localStorage.removeItem('token');
-    console.log('Token removed. Logging out...');
-    router.push('/');
-  }
-
-  if (!token) {
-    // Optional: show nothing or a loading spinner until token is verified
-    return <div className="min-h-screen flex items-center justify-center text-white">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-10">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Card className="max-w-3xl mx-auto shadow-lg rounded-2xl p-6">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Dashboard</CardTitle>
-            <CardDescription>Welcome to your portal</CardDescription>
-          </CardHeader>
-
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-purple-600 via-indigo-500 to-blue-500 p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-lg"
+      >
+        <Card className="p-6 shadow-xl backdrop-blur-md bg-white/90 rounded-2xl">
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <Card className="p-5 shadow-md rounded-xl bg-linear-to-r from-indigo-500 to-purple-600 text-white">
-                <h2 className="text-xl font-semibold mb-2">Profile</h2>
-                <p>Your account details appear here.</p>
-              </Card>
+            <h2 className="text-2xl font-bold mb-2 text-center">
+              Welcome, {username}
+            </h2>
 
-              <Card className="p-5 shadow-md rounded-xl bg-linear-to-r from-blue-500 to-cyan-500 text-white">
-                <h2 className="text-xl font-semibold mb-2">Activity</h2>
-                <p>Your recent actions will show here.</p>
-              </Card>
-            </div>
-
-            <div className="flex justify-center mt-8">
-              <Button onClick={logout} className="px-6 py-2 rounded-xl">Logout</Button>
-            </div>
+            {token ? (
+              <>
+                <p className="text-sm font-medium">Your Bearer Token:</p>
+                <pre className="p-3 bg-slate-100 text-xs mt-2 rounded-lg whitespace-pre-wrap break-all">
+                  {token}
+                </pre>
+              </>
+            ) : (
+              <p className="text-sm text-red-500 text-center">
+                No token found. Please log in again.
+              </p>
+            )}
           </CardContent>
         </Card>
       </motion.div>
